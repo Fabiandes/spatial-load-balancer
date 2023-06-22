@@ -3,12 +3,9 @@ package main
 import (
 	"context"
 	"math/rand"
-	"os"
-	"os/signal"
-	"runtime/pprof"
-	"syscall"
 	"time"
 
+	"github.com/fabiandes/spatial-load-balancer/api"
 	"github.com/fabiandes/spatial-load-balancer/simulation"
 	"go.uber.org/zap"
 )
@@ -21,17 +18,10 @@ func main() {
 	defer logger.Sync()
 	sugar := logger.Sugar()
 
+	ctx := context.Background()
+
 	// Set a random seed.
 	rand.Seed(time.Now().UnixNano())
-
-	// Start profiling
-	f, err := os.Create("myprogram.prof")
-	if err != nil {
-		sugar.Errorf("Failed to start profiling: %v", err)
-		return
-	}
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
 
 	// Configure and create simulation.
 	opts := &simulation.Options{
@@ -45,14 +35,22 @@ func main() {
 		return
 	}
 
-	// Cleanup
-	ctx, cancel := context.WithCancel(context.Background())
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	api := api.New(&api.APIOptions{
+		Logger: sugar,
+	})
 	go func() {
-		<-c
-
-		cancel()
+		if err := api.Listen(ctx, ":8080"); err != nil {
+			sugar.Errorf("API failed to listen: %v", err)
+		}
+	}()
+	go func() {
+		ch := make(chan []*simulation.Entity)
+		s.Subscribe(ch)
+		for es := range ch {
+			if err := api.Broadcast(es); err != nil {
+				sugar.Errorf("Failed to broadcast entities to clients: %v", err)
+			}
+		}
 	}()
 
 	if err := s.Run(ctx); err != nil {

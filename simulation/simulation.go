@@ -20,8 +20,9 @@ const (
 )
 
 type Simulation struct {
-	logger   *zap.SugaredLogger
-	entities []*Entity
+	logger      *zap.SugaredLogger
+	entities    []*Entity
+	subscribers []chan []*Entity
 }
 
 type Options struct {
@@ -64,7 +65,7 @@ func New(opts *Options) (*Simulation, error) {
 }
 
 func (s *Simulation) Update(ctx context.Context) error {
-	start := time.Now()
+	//start := time.Now()
 	// Update each entity by calling all systems.
 	g, _ := errgroup.WithContext(ctx)
 	for i := 0; i < len(s.entities); i++ {
@@ -76,13 +77,37 @@ func (s *Simulation) Update(ctx context.Context) error {
 	if err := g.Wait(); err != nil {
 		return fmt.Errorf("failed to update all entities: %v", err)
 	}
-	s.logger.Infow("Update completed", "duration", time.Since(start))
+
+	// ? We could use a go routine for this but we could need to use mutex locking.
+	// Publish changes to all subscribers
+	s.Publish(ctx)
+
+	//s.logger.Infow("Update completed", "duration", time.Since(start))
 	return nil
+}
+
+func (s *Simulation) Publish(ctx context.Context) {
+	for _, ch := range s.subscribers {
+		ch <- s.entities
+	}
+}
+
+func (s *Simulation) Subscribe(ch chan []*Entity) {
+	s.subscribers = append(s.subscribers, ch)
+}
+
+func (s *Simulation) Unsubscribe(ch chan []*Entity) {
+	for i := 0; i < len(s.subscribers); i++ {
+		if s.subscribers[i] == ch {
+			s.subscribers = append(s.subscribers[:i], s.subscribers[i+1:]...)
+			return
+		}
+	}
 }
 
 func (s *Simulation) Run(ctx context.Context) error {
 	// TODO: Use an FPS variable to control this.
-	t := time.NewTicker(time.Second / 1)
+	t := time.NewTicker(time.Second * 5)
 
 	for {
 		select {
