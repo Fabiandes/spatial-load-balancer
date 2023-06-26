@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/fabiandes/spatial-load-balancer/simulation"
+	"github.com/fabiandes/spatial-load-balancer/simulation/entity"
 	"github.com/google/uuid"
 )
 
@@ -25,7 +25,7 @@ func NewClient(conn net.Conn) *Client {
 	return c
 }
 
-func (c *Client) Send(es []*simulation.Entity) error {
+func (c *Client) Send(es []*entity.Entity) error {
 	// Marshall the message
 	encoder := gob.NewEncoder(c.conn)
 	if err := encoder.Encode(es); err != nil {

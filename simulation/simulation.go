@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/fabiandes/spatial-load-balancer/simulation/component"
-	"github.com/fabiandes/spatial-load-balancer/simulation/system"
-	"github.com/fabiandes/spatial-load-balancer/simulation/util"
+	"github.com/fabiandes/spatial-load-balancer/simulation/entity"
+	"github.com/fabiandes/spatial-load-balancer/simulation/system/worker"
+	"github.com/fabiandes/spatial-load-balancer/simulation/vector"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -20,23 +21,26 @@ const (
 )
 
 type Simulation struct {
-	logger      *zap.SugaredLogger
-	entities    []*Entity
-	subscribers []chan []*Entity
+	logger         *zap.SugaredLogger
+	entities       []*entity.Entity
+	subscribers    []chan []*entity.Entity
+	simulationRate int
 }
 
 type Options struct {
 	StartingEntityCount int
+	SimulationRate      int
 	Logger              *zap.SugaredLogger
 }
 
 func New(opts *Options) (*Simulation, error) {
 	s := &Simulation{
-		logger: opts.Logger,
+		logger:         opts.Logger,
+		simulationRate: opts.SimulationRate,
 	}
 
 	// Generate a set of Entities within the world.
-	es := make([]*Entity, opts.StartingEntityCount)
+	es := make([]*entity.Entity, opts.StartingEntityCount)
 	s.logger.Infof("Generating %d entities...", opts.StartingEntityCount)
 	for i := 0; i < opts.StartingEntityCount; i++ {
 		// Generate unique ID for the Entity.
@@ -44,15 +48,20 @@ func New(opts *Options) (*Simulation, error) {
 
 		// Create Transform component and move Entity to a random position within the world.
 		t := component.NewTransform()
-		t.Position = util.Vector{
+		t.Position = vector.Vector{
 			X: rand.Float64() * WorldWidth,
 			Y: rand.Float64() * WorldHeight,
 		}
 
-		// Create an Entity and attach Systems to it.
-		e := NewEntity(id, t, s.logger)
+		// Create Locomotion component.
+		l := component.Locomotion{
+			Speed: 1.5,
+		}
 
-		w := system.NewWorker(s.logger)
+		// Create an Entity and attach Systems to it.
+		e := entity.NewEntity(id, t, l, s.logger)
+
+		w := worker.NewWorker(s.logger)
 		e.Attach(w)
 
 		es[i] = e
@@ -65,7 +74,7 @@ func New(opts *Options) (*Simulation, error) {
 }
 
 func (s *Simulation) Update(ctx context.Context) error {
-	//start := time.Now()
+	start := time.Now()
 	// Update each entity by calling all systems.
 	g, _ := errgroup.WithContext(ctx)
 	for i := 0; i < len(s.entities); i++ {
@@ -82,7 +91,7 @@ func (s *Simulation) Update(ctx context.Context) error {
 	// Publish changes to all subscribers
 	s.Publish(ctx)
 
-	//s.logger.Infow("Update completed", "duration", time.Since(start))
+	s.logger.Infow("Update completed", "duration", time.Since(start))
 	return nil
 }
 
@@ -92,11 +101,11 @@ func (s *Simulation) Publish(ctx context.Context) {
 	}
 }
 
-func (s *Simulation) Subscribe(ch chan []*Entity) {
+func (s *Simulation) Subscribe(ch chan []*entity.Entity) {
 	s.subscribers = append(s.subscribers, ch)
 }
 
-func (s *Simulation) Unsubscribe(ch chan []*Entity) {
+func (s *Simulation) Unsubscribe(ch chan []*entity.Entity) {
 	for i := 0; i < len(s.subscribers); i++ {
 		if s.subscribers[i] == ch {
 			s.subscribers = append(s.subscribers[:i], s.subscribers[i+1:]...)
@@ -106,8 +115,7 @@ func (s *Simulation) Unsubscribe(ch chan []*Entity) {
 }
 
 func (s *Simulation) Run(ctx context.Context) error {
-	// TODO: Use an FPS variable to control this.
-	t := time.NewTicker(time.Second * 5)
+	t := time.NewTicker(time.Second / time.Duration(s.simulationRate))
 
 	for {
 		select {

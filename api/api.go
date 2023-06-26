@@ -7,7 +7,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/fabiandes/spatial-load-balancer/simulation"
+	"github.com/fabiandes/spatial-load-balancer/simulation/entity"
 	"go.uber.org/zap"
 )
 
@@ -103,13 +103,13 @@ func (api *API) Handle(ctx context.Context, c *Client) {
 	}
 }
 
-func (api *API) Broadcast(es []*simulation.Entity) error {
+func (api *API) Broadcast(es []*entity.Entity) error {
 	for _, c := range api.clients {
-		api.logger.Infof("Sending message to client %q", c.id)
+		//api.logger.Infof("Sending message to client %q", c.id)
 		if err := c.Send(es); err != nil {
 			return fmt.Errorf("failed to send entity update to client %q: %v", c.id, err)
 		}
-		api.logger.Infof("Successfully sent message to client %q", c.id)
+		//api.logger.Infof("Successfully sent message to client %q", c.id)
 	}
 
 	return nil

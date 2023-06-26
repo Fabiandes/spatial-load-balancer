@@ -6,6 +6,7 @@ require (
 	gioui.org v0.0.0-20230619141907-b183774063fc // indirect
 	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect
 	gioui.org/shader v1.0.6 // indirect
+	github.com/beefsack/go-astar v0.0.0-20200827232313-4ecf9e304482 // indirect
 	github.com/go-text/typesetting v0.0.0-20230602202114-9797aefac433 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect

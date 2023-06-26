@@ -7,17 +7,17 @@ import (
 	"net"
 
 	"gioui.org/app"
-	"github.com/fabiandes/spatial-load-balancer/simulation"
+	"github.com/fabiandes/spatial-load-balancer/simulation/entity"
 )
 
 type Scene struct {
-	Entities []*simulation.Entity
+	Entities []*entity.Entity
 	window   *app.Window
 }
 
 func NewScene(w *app.Window) *Scene {
 	s := &Scene{
-		Entities: []*simulation.Entity{},
+		Entities: []*entity.Entity{},
 		window:   w,
 	}
 
@@ -37,7 +37,7 @@ func (s *Scene) Initialize() error {
 	for {
 		// Unmarshall the received data.
 		fmt.Println("Waiting for update...")
-		es := new([]*simulation.Entity)
+		es := new([]*entity.Entity)
 		decoder := gob.NewDecoder(conn)
 		if err := decoder.Decode(es); err != nil {
 			log.Fatal(err)

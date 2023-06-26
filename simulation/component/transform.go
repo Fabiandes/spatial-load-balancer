@@ -1,18 +1,18 @@
 package component
 
 import (
-	"github.com/fabiandes/spatial-load-balancer/simulation/util"
+	"github.com/fabiandes/spatial-load-balancer/simulation/vector"
 )
 
 type Transform struct {
-	Position util.Vector
-	Rotation util.Vector
-	Scale    util.Vector
+	Position vector.Vector
+	Rotation vector.Vector
+	Scale    vector.Vector
 }
 
 func NewTransform() Transform {
 	t := Transform{
-		Scale: util.Vector{
+		Scale: vector.Vector{
 			X: 1,
 			Y: 1,
 		},

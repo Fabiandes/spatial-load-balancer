@@ -17,6 +17,10 @@ import (
 	"github.com/fabiandes/spatial-load-balancer/renderer"
 )
 
+const (
+	EntitySize = 10
+)
+
 func main() {
 	w := app.NewWindow(app.Size(1000, 1000))
 
@@ -60,12 +64,10 @@ func run(w *app.Window, s *renderer.Scene) error {
 }
 
 func DrawEntity(gtx layout.Context, position image.Point) {
-	// TODO: Convert from Dx to Px
-
 	x := int(math.Round(float64(float32(position.X) * gtx.Metric.PxPerDp)))
 	y := int(math.Round(float64(float32(position.Y) * gtx.Metric.PxPerDp)))
 
-	entityRadius := int(math.Round(float64(1.0 * gtx.Metric.PxPerDp)))
+	entityRadius := int(math.Round(float64(EntitySize / 2 * gtx.Metric.PxPerDp)))
 	defer clip.Ellipse{
 		Min: image.Point{
 			X: x - entityRadius,

@@ -7,7 +7,13 @@ import (
 
 	"github.com/fabiandes/spatial-load-balancer/api"
 	"github.com/fabiandes/spatial-load-balancer/simulation"
+	"github.com/fabiandes/spatial-load-balancer/simulation/entity"
 	"go.uber.org/zap"
+)
+
+const (
+	StartingEntityCount = 10
+	SimulationRate      = 24
 )
 
 func main() {
@@ -25,7 +31,8 @@ func main() {
 
 	// Configure and create simulation.
 	opts := &simulation.Options{
-		StartingEntityCount: 1000,
+		StartingEntityCount: StartingEntityCount,
+		SimulationRate:      SimulationRate,
 		Logger:              sugar,
 	}
 
@@ -44,7 +51,7 @@ func main() {
 		}
 	}()
 	go func() {
-		ch := make(chan []*simulation.Entity)
+		ch := make(chan []*entity.Entity)
 		s.Subscribe(ch)
 		for es := range ch {
 			if err := api.Broadcast(es); err != nil {
